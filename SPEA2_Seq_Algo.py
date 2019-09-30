@@ -2,9 +2,9 @@ import math
 import random
 from Bio.Data import CodonTable
 from Bio.SeqUtils import seq3
-from Dataclasses.Sequence_Container import SequenceContainer
-from Fitness.Fitness_Functions import eval_gc_content, eval_hairpins, eval_homopolymers, eval_host, eval_repeats, eval_restriction_sites, eval_splice_sites, eval_start_sites
+from Fitness_Functions import eval_gc_content, eval_hairpins, eval_homopolymers, eval_host, eval_repeats, eval_restriction_sites, eval_splice_sites, eval_start_sites
 
+from Sequence_Container import SequenceContainer
 max_generations = 2
 
 

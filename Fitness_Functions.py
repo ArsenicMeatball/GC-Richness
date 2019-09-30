@@ -2,8 +2,8 @@ import re
 from Bio.Data import CodonTable
 from Bio.Restriction import Analysis
 from Bio.SeqUtils import GC
-from Dataclasses.Sequence_Container import SequenceContainer
-from Data.Bio_Structures import RibosomeBindingSites, splice_acceptors, splice_donors
+from Sequence_Container import SequenceContainer
+from Bio_Structures import RibosomeBindingSites, splice_acceptors, splice_donors
 
 
 def eval_host(individual, ancestor_sequence):

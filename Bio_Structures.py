@@ -1,4 +1,15 @@
 import re
+import json
+import python_codon_tables as pct
+from Bio import Entrez
+
+
+# Species-specifc data can be found on the Codon Usage Database
+# (http://www.kazusa.or.jp/codon) using the NCBI Taxonomy database
+# (http://www.ncbi.nlm.nih.gov/taxonomy) id (e.g. 413997)
+# or the organism's Latin name (e.g. Escherichia coli B).
+# Mapping species names to Taxonomy IDs can be done here:
+_tax_id_url = "https://www.ncbi.nlm.nih.gov/Taxonomy/TaxIdentifier/tax_identifier.cgi"
 
 # consensus donor seq is "GGGTRAGT"
 # below is all possible versions with the first GT fixed, and at
@@ -82,3 +93,63 @@ RibosomeBindingSites = {
     "rbs_30": "AAAAG",
     "rbs_31": "AAAAA",
 }
+
+
+def codon_tables(taxid, table_path=None):
+    """Download the codon use table for the given species and return it as
+    a dictionary.
+    Returns:
+        int: The NCBI taxonomy ID for the supplied species.
+    Args:
+        taxid (int): NCBI taxonomy ID for the desrired species.
+        table_path (str): Defaults to None. Path to a JSON-formatted file representing the
+            codon usage to consider. If None, the table is fetched from the internet.
+    Raises:
+        ValueError: If the NCBI taxonomy ID is not associated with a codon
+        usage table, raise a ``ValueError`` informing the user and directing
+        them to the NCBI Taxonomy Browser.
+    Returns:
+        dict{str, float}: A dictionary with codons as keys and the frequency
+        that the codon is used to encode its amino acid as values.
+    """
+    if table_path is None:
+        try:
+            taxid = int(taxid)
+        except ValueError as exc:
+            taxid = _tax_id_from_species(taxid, exc)
+        codon_table_by_aa = pct.download_codons_table(taxid)
+    else:
+        # load table from disk -- JSON format
+        with open(table_path, "r") as table:
+            codon_table_by_aa = json.load(table)
+
+    return_dict = {}
+    for _, codon_dict in codon_table_by_aa.items():
+        for codon, frequency in codon_dict.items():
+            return_dict[codon] = frequency
+    if not return_dict:
+        raise ValueError(
+            '"{}" is not a valid host id. '.format(taxid)
+            + "Supported hosts (Latin and NCBI taxonomy IDs) can be found at "
+            + _tax_id_url
+        )
+
+    return return_dict
+
+
+def _tax_id_from_species(species, exc=None):
+    """Map the name of a species from a string to the NCBI taxonomy ID and
+    return it.
+    Args:
+        species (str): Name of the species to map.
+    Raises:
+        ValueError: If the NCBI taxonomy ID cannot be determined, raise a ``ValueError``
+        informing the user and directing them to the NCBI Taxonomy Browser.
+    Returns:
+        int: The NCBI taxonomy ID for the supplied species.
+    """
+    search_species = species.replace(" ", "+").replace("_", "+").strip()
+    handle = Entrez.esearch(term=search_species, db="taxonomy")
+    record = Entrez.read(handle)
+    taxid = int(record["IdList"].pop())
+    return taxid
